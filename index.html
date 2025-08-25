@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Operadores SET en SQL — Dataset de práctica</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #22d3ee;
+      --ok: #10b981;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: linear-gradient(120deg, #0f172a 0%, #0b1b2b 60%, #0f172a 100%);
+      color: var(--text);
+    }
+    header {
+      padding: 40px 20px 10px;
+      text-align: center;
+    }
+    header h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .3px; }
+    header p { margin: 0; color: var(--muted); }
+    .container { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px;
+    }
+    .card {
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 18px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    }
+    .card h3 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 6px 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .btn {
+      display: inline-block; text-decoration: none; color: #001018; background: var(--accent);
+      padding: 10px 14px; border-radius: 12px; font-weight: 700; margin-top: 10px;
+      box-shadow: 0 6px 20px rgba(34,211,238,.35);
+    }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: #0b1220; color: #d1d5db;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    pre { padding: 14px; overflow: auto; }
+    .tag { font-size: 12px; padding: 2px 8px; border-radius: 9999px; background: #0b1220; border: 1px solid rgba(255,255,255,0.08); color: var(--muted); }
+    footer { text-align: center; color: var(--muted); padding: 24px; font-size: 13px; }
+    .highlight { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .split { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 900px) {
+      .split { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Operadores <span class="highlight">SET</span> en SQL — Dataset de práctica</h1>
+    <p>UNAB · Base de Datos (Advance) · Última actualización: 2025-08-25 21:46</p>
+  </header>
+
+  <main class="container">
+    <section class="grid">
+      <article class="card">
+        <h3>SQLite — DBeaver</h3>
+        <p>Archivo listo para abrir en DBeaver como conexión <span class="tag">SQLite</span>.</p>
+        <a class="btn" href="be_channels.sqlite" download>Descargar be_channels.sqlite</a>
+        <p><small>SHA-256: <code>cb52c8d6662f29b1064e184a8eb126b7b466969b50aac33ccde7bd8d90e2ee13</code></small></p>
+      </article>
+      <article class="card">
+        <h3>MySQL — phpMyAdmin</h3>
+        <p>Script SQL para crear y poblar el esquema en <span class="tag">MySQL 8.x</span>.</p>
+        <a class="btn" href="be_channels_mysql.sql" download>Descargar be_channels_mysql.sql</a>
+        <p><small>SHA-256: <code>86fc4152ba637aa8e0418bd23f0791ae21787799e6f170ebfe74d0360ed35c1a</code></small></p>
+      </article>
+      <article class="card">
+        <h3>README</h3>
+        <p>Instrucciones y consultas SET/Join de práctica.</p>
+        <a class="btn" href="be_channels_README.txt" download>Descargar README</a>
+        <p><small>SHA-256: <code>85766beda16a55148d6b89082ef2ae5a3cba85fe549e588b639b0b452042c7f9</code></small></p>
+      </article>
+    </section>
+
+    <section class="grid" style="margin-top:24px;">
+      <article class="card">
+        <h3>Esquema</h3>
+        <pre><code>clients(id, rut, nombre)
+web_clients(client_id)
+app_clients(client_id)
+atm_clients(client_id)</code></pre>
+        <p>240 clientes con 1–3 canales asignados (web, app, ATM). Incluye casos exclusivos por canal para ejercitar diferencias.</p>
+      </article>
+      <article class="card">
+        <h3>Objetivo</h3>
+        <p>Explorar: <strong>UNION</strong>, <strong>UNION ALL</strong>, <strong>INTERSECT</strong>, <strong>EXCEPT</strong> (SQLite) y sus equivalentes con <strong>JOIN</strong> en MySQL.</p>
+        <p>Contexto de negocio: migrar clientes hacia <span class="highlight">APP</span> (canal de menor costo).</p>
+      </article>
+    </section>
+
+    <section class="split" style="margin-top:24px;">
+      <article class="card">
+        <h3>SQLite — ejemplos rápidos</h3>
+        <pre><code>-- Unión sin duplicados (web ∪ app)
+SELECT client_id FROM web_clients
+UNION
+SELECT client_id FROM app_clients;
+
+-- Intersección (web ∩ app)
+SELECT client_id FROM web_clients
+INTERSECT
+SELECT client_id FROM app_clients;
+
+-- Diferencia (web \ app)
+SELECT client_id FROM web_clients
+EXCEPT
+SELECT client_id FROM app_clients;</code></pre>
+      </article>
+      <article class="card">
+        <h3>MySQL — equivalentes</h3>
+        <pre><code>-- Intersección (INNER JOIN)
+SELECT w.client_id
+FROM web_clients w
+INNER JOIN app_clients a USING (client_id);
+
+-- Diferencia (LEFT JOIN + IS NULL)
+SELECT w.client_id
+FROM web_clients w
+LEFT JOIN app_clients a USING (client_id)
+WHERE a.client_id IS NULL;
+
+-- Tres canales
+SELECT w.client_id
+FROM web_clients w
+JOIN app_clients a USING (client_id)
+JOIN atm_clients t USING (client_id);</code></pre>
+      </article>
+    </section>
+
+    <section class="grid" style="margin-top:24px;">
+      <article class="card">
+        <h3>Cómo abrir en DBeaver (SQLite)</h3>
+        <ol>
+          <li>Descarga <strong>be_channels.sqlite</strong>.</li>
+          <li>En DBeaver → <em>Database &gt; New Connection &gt; SQLite</em>.</li>
+          <li>Elige el archivo descargado y conecta.</li>
+        </ol>
+      </article>
+      <article class="card">
+        <h3>Cómo importar en phpMyAdmin (MySQL)</h3>
+        <ol>
+          <li>Descarga <strong>be_channels_mysql.sql</strong>.</li>
+          <li>Abre phpMyAdmin → selecciona tu base de datos.</li>
+          <li>Pestaña <em>Importar</em> → carga el archivo y ejecuta.</li>
+        </ol>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:24px;">
+      <h3>Tip para ver nombres/RUT</h3>
+      <pre><code>-- SQLite / MySQL
+SELECT c.rut, c.nombre
+FROM clients c
+JOIN app_clients a ON a.client_id = c.id
+ORDER BY c.nombre;</code></pre>
+      <p class="warn">Recuerda: en GitHub Pages los enlaces funcionan si subes <em>este index.html</em> y los archivos al mismo directorio.</p>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 UNAB · Material de apoyo docente · Hecho para la clase de Operadores SET en SQL.
+  </footer>
+</body>
+</html>
